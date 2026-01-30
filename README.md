@@ -1,6 +1,6 @@
-# Document Typography Studio
+# Text Enrichment Interface Studio
 
-A clean, minimal web application for applying typography and highlighting styles to Word documents (.docx).
+Web-based interface for applying typography and highlighting styles to Word documents (.docx).
 
 ## Features
 
@@ -13,7 +13,7 @@ A clean, minimal web application for applying typography and highlighting styles
   - **Strikethrough**: Add strikethrough effect
 
 - **Highlighting Options**:
-  - **Background Highlight**: Apply colored background (behind text, not affecting opacity)
+  - **Background Highlight**: Apply colored background
   - **Text Color**: Change the color of selected text
   - **Box Border**: Add rectangular border around text
   - **Circle Border**: Add elliptical border around text
@@ -29,11 +29,11 @@ text-enrichment-interface/
 ├── back/
 │   ├── app.py              # Flask backend server
 │   ├── requirements.txt    # Python dependencies
-│   ├── uploads/            # Uploaded documents (auto-created)
-│   └── data/               # Style data (auto-created)
+│   ├── uploads/            # Uploaded documents 
+│   └── data/               # Style data 
 ├── front/
 │   ├── index.html          # Main HTML file
-│   ├── styles.css          # CSS styles (minimal white design)
+│   ├── styles.css          # CSS styles 
 │   └── script.js           # JavaScript application
 └── README.md
 ```
@@ -43,7 +43,7 @@ text-enrichment-interface/
 ### Prerequisites
 
 - Python 3.8 or higher
-- pip (Python package installer)
+- pip
 - Modern web browser
 
 ### Step 1: Install Dependencies
@@ -53,13 +53,13 @@ Open terminal in the `backend` folder:
 ```bash
 cd text-enrichment-interface/back
 pip install -r requirements.txt
-On macOS : brew install pango
 ```
 
 ### Step 2: Run the Server
 
 ```bash
 python app.py
+/ python3 app.py
 ```
 
 You should see:
@@ -109,14 +109,6 @@ Go to: **http://localhost:5001**
 - Use "Clear All" to remove all styles
 - Use "Save" to persist styles to the server
 
-## Design
-
-The interface features a clean, minimal white design with:
-- White background with subtle borders
-- Black/dark text for readability
-- Simple, focused UI elements
-- Smooth transitions and feedback
-
 ## Technology Stack
 
 - **Frontend**: HTML5, CSS3, JavaScript (ES6+)
@@ -127,9 +119,6 @@ The interface features a clean, minimal white design with:
 
 ### "Module not found: docx"
 Run: `pip install python-docx`
-
-### Port 5001 in use
-Change the port in `app.py` on the last line, and update `apiBase` in `script.js`
 
 ### Document not uploading
 - Ensure it's a .docx file (not .doc)
