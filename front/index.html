@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                <span class="logo-text">Studio</span>
+            </div>
+            <div class="header-actions">
+                <button id="uploadBtn" class="btn btn-outline">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    Upload Document
+                </button>
+                <input type="file" id="fileInput" accept=".docx,.doc" hidden>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <!-- Sidebar Toolbar -->
+            <aside class="toolbar" id="toolbar">
+                <div class="toolbar-section">
+                    <h3 class="toolbar-title">Text Styles</h3>
+                    <div class="tool-row">
+                        <button class="tool-btn" data-tool="bold" title="Bold (Ctrl+B)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
+                                <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/>
+                            </svg>
+                        </button>
+                        <button class="tool-btn" data-tool="italic" title="Italic (Ctrl+I)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="19" y1="4" x2="10" y2="4"/>
+                                <line x1="14" y1="20" x2="5" y2="20"/>
+                                <line x1="15" y1="4" x2="9" y2="20"/>
+                            </svg>
+                        </button>
+                        <button class="tool-btn" data-tool="underline" title="Underline (Ctrl+U)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/>
+                                <line x1="4" y1="21" x2="20" y2="21"/>
+                            </svg>
+                        </button>
+                        <button class="tool-btn" data-tool="strikethrough" title="Strikethrough">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 12h16"/>
+                                <path d="M6 20V16a4 4 0 0 1 8 0"/>
+                                <path d="M18 4v4a4 4 0 0 1-8 0"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="toolbar-section">
+                    <h3 class="toolbar-title">Highlighting</h3>
+                    <div class="tool-row">
+                        <button class="tool-btn wide" data-tool="highlight" title="Background Highlight">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="5" width="18" height="14" rx="2"/>
+                            </svg>
+                            <span>Highlight</span>
+                        </button>
+                        <button class="tool-btn wide" data-tool="textcolor" title="Text Color">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 20h16"/>
+                                <path d="M12 4l5 12H7z"/>
+                            </svg>
+                            <span>Color</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="toolbar-section">
+                    <h3 class="toolbar-title">Borders</h3>
+                    <div class="tool-row">
+                        <button class="tool-btn wide" data-tool="border" title="Rectangle Border">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            </svg>
+                            <span>Box</span>
+                        </button>
+                        <button class="tool-btn wide" data-tool="circle" title="Circle Border">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <ellipse cx="12" cy="12" rx="10" ry="8"/>
+                            </svg>
+                            <span>Circle</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="toolbar-section">
+                    <h3 class="toolbar-title">Colors</h3>
+                    <div class="color-row">
+                        <label class="color-label">
+                            <span>Highlight</span>
+                            <input type="color" id="highlightColor" value="#FFEB3B">
+                        </label>
+                        <label class="color-label">
+                            <span>Text</span>
+                            <input type="color" id="textColor" value="#E53935">
+                        </label>
+                        <label class="color-label">
+                            <span>Border</span>
+                            <input type="color" id="borderColor" value="#1976D2">
+                        </label>
+                    </div>
+                    <div class="quick-colors">
+                        <button class="quick-color" style="background: #FFEB3B;" data-color="#FFEB3B"></button>
+                        <button class="quick-color" style="background: #A5D6A7;" data-color="#A5D6A7"></button>
+                        <button class="quick-color" style="background: #90CAF9;" data-color="#90CAF9"></button>
+                        <button class="quick-color" style="background: #FFAB91;" data-color="#FFAB91"></button>
+                        <button class="quick-color" style="background: #CE93D8;" data-color="#CE93D8"></button>
+                        <button class="quick-color" style="background: #FFF59D;" data-color="#FFF59D"></button>
+                    </div>
+                </div>
+
+                <div class="toolbar-section toolbar-actions">
+                    <button id="undoBtn" class="btn btn-secondary" disabled>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 7v6h6"/>
+                            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+                        </svg>
+                        Undo
+                    </button>
+                    <button id="clearBtn" class="btn btn-secondary">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        Clear All
+                    </button>
+                    <button id="saveBtn" class="btn btn-primary">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        Save
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Document Viewer -->
+            <main class="viewer-container">
+                <div class="viewer-header">
+                    <div class="file-info" id="fileInfo">
+                        <span class="file-name">No document loaded</span>
+                    </div>
+                    <div class="view-controls">
+                        <span class="selection-hint" id="selectionHint">Select text to apply styles</span>
+                    </div>
+                </div>
+
+                <div class="document-viewport" id="documentViewport">
+                    <div class="empty-state" id="emptyState">
+                        <div class="empty-icon">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                        </div>
+                        <h2>Upload a Word document</h2>
+                        <p>Drag and drop a .docx file here or click the button below</p>
+                        <button id="uploadBtnAlt" class="btn btn-outline">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            Upload Document
+                        </button>
+                    </div>
+                    
+                    <div class="document-container" id="documentContainer" style="display: none;">
+                        <div class="document-content" id="documentContent"></div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Styles Panel -->
+            <aside class="styles-panel" id="stylesPanel">
+                <div class="panel-header">
+                    <h3>Applied Styles</h3>
+                    <span class="style-count" id="styleCount">0</span>
+                </div>
+                <div class="styles-list" id="stylesList">
+                    <div class="empty-styles">
+                        <p>No styles applied</p>
+                        <small>Select text and apply styles</small>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Toast notifications -->
+        <div class="toast-container" id="toastContainer"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
