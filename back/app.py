@@ -4,7 +4,8 @@ from werkzeug.utils import secure_filename
 from docx import Document
 from playwright.sync_api import sync_playwright
 from datetime import datetime
-import os, json, uuid, html as html_module
+import os, json, uuid, html as html_module, base64, re
+import openai
 
 app = Flask(__name__)
 CORS(app)
@@ -54,6 +55,21 @@ def extract_text_from_docx(filepath):
                     content.append({'id': f't-{ti}-{ri}-{ci}', 'type': 'table-cell', 'text': cell.text})
     return content
 
+_CSS_PROP = {
+    'highlight': 'background-color', 'textcolor': 'color', 'dropcap': 'color',
+    'border': 'border-color', 'circle': 'border-color',
+    'underline': 'text-decoration-color', 'wavyunderline': 'text-decoration-color',
+    'strikethrough': 'text-decoration-color', 'overline': 'text-decoration-color',
+    'fontsize': 'font-size', 'letterspacing': 'letter-spacing'
+}
+
+def _icon_html(s):
+    if s.get('svgCode'):
+        return f'<span class="inline-icon">{s["svgCode"]}</span>'
+    if s.get('iconData'):
+        return f'<img src="{html_module.escape(s["iconData"], quote=True)}" class="inline-icon" alt="">'
+    return ''
+
 def build_styled_html(content, styles):
     styles_by_para = {}
     for s in styles:
@@ -68,28 +84,46 @@ def build_styled_html(content, styles):
             paragraphs.append(f'<p>{html_module.escape(text)}</p>')
             continue
 
-        bounds = sorted({0, len(text)} | {max(0, min(s[k], len(text))) for s in para_styles for k in ('startOffset', 'endOffset')})
+        icon_styles = [s for s in para_styles if s['type'] == 'inlineicon']
+        callout_styles = [s for s in para_styles if s['type'] == 'callout']
+        text_styles = [s for s in para_styles if s['type'] not in ('inlineicon', 'callout')]
+
+        offsets = {0, len(text)}
+        for s in text_styles:
+            offsets.add(max(0, min(s['startOffset'], len(text))))
+            offsets.add(max(0, min(s['endOffset'], len(text))))
+        for s in icon_styles:
+            offsets.add(max(0, min(s['startOffset'], len(text))))
+        bounds = sorted(offsets)
+
         parts = ''
         for j in range(len(bounds) - 1):
             start, end = bounds[j], bounds[j + 1]
+            for s in icon_styles:
+                if s['startOffset'] == start:
+                    parts += _icon_html(s)
             seg = text[start:end]
             if not seg:
                 continue
-            active = [s for s in para_styles if s['startOffset'] <= start and s['endOffset'] >= end]
+            active = [s for s in text_styles if s['startOffset'] <= start and s['endOffset'] >= end]
             if not active:
                 parts += html_module.escape(seg)
             else:
                 classes = ['styled-text'] + [s['type'] for s in active]
-                inline = []
-                for s in active:
-                    t, c = s['type'], s['color']
-                    if t == 'highlight': inline.append(f'background-color:{c}')
-                    elif t == 'textcolor': inline.append(f'color:{c}')
-                    elif t in ('border', 'circle'): inline.append(f'border-color:{c}')
-                    elif t in ('underline', 'strikethrough'): inline.append(f'text-decoration-color:{c}')
+                inline = [f'{_CSS_PROP[s["type"]]}:{s["color"]}' for s in active if s['type'] in _CSS_PROP]
                 style_attr = f' style="{";".join(inline)}"' if inline else ''
                 parts += f'<span class="{" ".join(classes)}"{style_attr}>{html_module.escape(seg)}</span>'
-        paragraphs.append(f'<p>{parts}</p>')
+        for s in icon_styles:
+            if s['startOffset'] >= len(text):
+                parts += _icon_html(s)
+        if callout_styles:
+            cs = callout_styles[-1]
+            p_inline = [f'border-color:{cs["color"]}']
+            if cs.get('bgColor'):
+                p_inline.append(f'background-color:{cs["bgColor"]}')
+            paragraphs.append(f'<p class="callout-block" style="{";".join(p_inline)}">{parts}</p>')
+        else:
+            paragraphs.append(f'<p>{parts}</p>')
 
     return f'''<!DOCTYPE html>
 <html>
@@ -112,7 +146,15 @@ body{{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif
 .styled-text.strikethrough{{text-decoration:line-through;text-decoration-thickness:2px}}
 .styled-text.highlight{{padding:0 2px;border-radius:2px}}
 .styled-text.border{{border:2px solid;border-radius:3px;padding:0 4px;margin:0 2px}}
-.styled-text.circle{{border:2px solid;border-radius:100px;padding:0 6px;margin:0 2px}}
+.styled-text.circle{{border:2px solid;border-radius:100px;padding:2px 8px;margin:0 2px}}
+.styled-text.sansserif{{font-family:'Helvetica Neue',Arial,sans-serif}}
+.styled-text.mono{{font-family:'SF Mono','Consolas','Monaco','Courier New',monospace;background:rgba(0,0,0,.04);padding:0 4px;border-radius:3px}}
+.styled-text.smallcaps{{font-variant:small-caps;letter-spacing:.05em}}
+.styled-text.overline{{text-decoration:overline;text-decoration-thickness:2px}}
+.styled-text.wavyunderline{{text-decoration:underline wavy;text-decoration-thickness:1.5px;text-underline-offset:2px}}
+.styled-text.dropcap{{float:left;font-size:3.2em;line-height:0.8;padding-right:8px;padding-top:4px;font-weight:700}}
+.document-content p.callout-block{{border:2px solid;border-radius:8px;padding:12px 16px;margin-bottom:1em}}
+.inline-icon{{height:1em;width:auto;vertical-align:middle;margin:0 2px;display:inline}}
 </style>
 </head>
 <body>
@@ -181,6 +223,78 @@ def log_enrichment_action(doc_id):
     doc.setdefault('enrichment_log', []).append(entry)
     save_doc(doc_id, doc)
     return jsonify({"success": True, "message": "Action logged", "log_count": len(doc['enrichment_log'])})
+
+@app.route('/api/generate-icon', methods=['POST'])
+def generate_icon():
+    data = request.get_json()
+    if not data or not data.get('description'):
+        return jsonify({"error": "Description is required"}), 400
+
+    description = data['description'].strip()
+    if len(description) > 200:
+        return jsonify({"error": "Description too long (max 200 characters)"}), 400
+
+    api_key = os.environ.get('OPENAI_API_KEY')
+    if not api_key:
+        return jsonify({"error": "OpenAI API key not configured"}), 500
+    client = openai.OpenAI(api_key=api_key)
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-5.2",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert SVG icon designer. Create a single, high-quality SVG icon.\n"
+                        "Requirements:\n"
+                        "- Output ONLY valid SVG code. No explanation, no markdown, no comments.\n"
+                        "- Use <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" "
+                        "stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n"
+                        "- Color rules:\n"
+                        "- If the user mentions a color (e.g., 'red star', 'blue arrow'), use that exact color as hex values.\n "
+                        "- If no color is mentioned, use stroke=\"currentColor\" fill=\"none\" as defaults on the <svg> element.\n"
+                        "- The icon must be immediately recognizable when displayed at 16px size.\n"
+                        "- Keep the design clean with minimal elements. Avoid excessive detail.\n"
+                        "- Stay within coordinates 2-22 to ensure padding inside the viewBox.\n"
+                        "- Use well-known visual metaphors (e.g., checkmark=success, star=favorite, heart=love, gear=settings).\n"
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"Generate an SVG icon for: {description}"
+                }
+            ],
+            max_completion_tokens=800,
+            temperature=0.5
+        )
+
+        svg_text = response.choices[0].message.content.strip()
+
+        if svg_text.startswith('```'):
+            svg_text = re.sub(r'^```(?:svg|xml)?\s*\n?', '', svg_text)
+            svg_text = re.sub(r'\n?```\s*$', '', svg_text)
+            svg_text = svg_text.strip()
+
+        if not svg_text.startswith('<svg') or not svg_text.endswith('</svg>'):
+            return jsonify({"error": "Failed to generate valid SVG"}), 500
+
+        if '<script' in svg_text.lower():
+            return jsonify({"error": "Invalid SVG content"}), 500
+
+        data_url = f"data:image/svg+xml;base64,{base64.b64encode(svg_text.encode()).decode()}"
+
+        return jsonify({
+            "success": True,
+            "iconData": data_url,
+            "iconName": description[:50],
+            "svgCode": svg_text
+        })
+
+    except openai.APIError as e:
+        return jsonify({"error": f"OpenAI API error: {str(e)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Failed to generate icon: {str(e)}"}), 500
 
 @app.route('/api/document/<doc_id>/export', methods=['POST'])
 def export_document(doc_id):
@@ -253,7 +367,8 @@ def serve_static(filename):
     return send_from_directory(FRONTEND_PATH, filename)
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5002))
     print("=" * 50)
-    print("Server running at: http://localhost:5001")
+    print(f"Server running at: http://localhost:{port}")
     print("=" * 50)
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    app.run(debug=os.environ.get('FLASK_ENV') != 'production', host='0.0.0.0', port=port)
